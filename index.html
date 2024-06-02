@@ -3,9 +3,16 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="X-UA-Compatible"="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lab 9</title>
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({
+      token: "44ef488908ae4076b73dc81dbfff63d7"
+      // for more configuration options, see https://docs.trackjs.com
+    });
+  </script>
 
   <style>
     button {
@@ -69,39 +76,123 @@
     </form>
 
     <section id="error-btns">
-      <button>Console Log</button>
-      <button>Console Error</button>
-      <button>Console Count</button>
-      <button>Console Warn</button>
-      <button>Console Assert</button>
-      <button>Console Clear</button>
-      <button>Console Dir</button>
-      <button>Console dirxml</button>
-      <button>Console Group Start</button>
-      <button>Console Group End</button>
-      <button>Console Table</button>
-      <button>Start Timer</button>
-      <button>End Timer</button>
-      <button>Console Trace</button>
-      <button>Trigger a Global Error</button>
+      <button id="log-btn">Console Log</button>
+      <button id="error-btn">Console Error</button>
+      <button id="count-btn">Console Count</button>
+      <button id="warn-btn">Console Warn</button>
+      <button id="assert-btn">Console Assert</button>
+      <button id="clear-btn">Console Clear</button>
+      <button id="dir-btn">Console Dir</button>
+      <button id="dirxml-btn">Console dirxml</button>
+      <button id="group-start-btn">Console Group Start</button>
+      <button id="group-end-btn">Console Group End</button>
+      <button id="table-btn">Console Table</button>
+      <button id="start-timer-btn">Start Timer</button>
+      <button id="end-timer-btn">End Timer</button>
+      <button id="trace-btn">Console Trace</button>
+      <button id="global-error-btn">Trigger a Global Error</button>
     </section>
   </main>
 
   <script>
-    let form = document.querySelector('form');
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+    // Custom error class
+    class CalculatorError extends Error {
+      constructor(message) {
+        super("Sadly an error happened my friend: " + message);
+        this.name = 'CalculatorError';
+      }
+    }
+
+    // Error handler to catch and log errors
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}`, error);
+
+      // Sending error details to a server
+      fetch('https://example.com/log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message,
+          source,
+          lineno,
+          colno,
+          error: error.toString()
+        })
+      });
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let form = document.querySelector('form');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        let output = document.querySelector('output');
+        let firstNum = document.querySelector('#first-num').value;
+        let secondNum = document.querySelector('#second-num').value;
+        let operator = document.querySelector('#operator').value;
+
+        try {
+          if (firstNum === '' || secondNum === '' || isNaN(firstNum) || isNaN(secondNum)) {
+            console.log('Sadly an error happened my friend');
+            throw new CalculatorError('Both inputs must be numbers.');
+          }
+          let result = eval(`${firstNum} ${operator} ${secondNum}`);
+          if (isNaN(result) || !isFinite(result)) {
+            console.log('Sadly an error happened my friend');
+            throw new CalculatorError('The result is not a number.');
+          }
+          output.innerHTML = result;
+        } catch (error) {
+          output.innerHTML = ''; // Clear the output element in case of error
+          if (error instanceof CalculatorError) {
+            console.error(`Calculator Error: ${error.message}`);
+          } else {
+            console.error(error);
+          }
+        }
+      });
+
+      let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+
+      // Mapping button ids to console methods
+      const consoleActions = {
+        'log-btn': () => console.log('Console Log Demo'),
+        'error-btn': () => console.error('Console Error Demo'),
+        'count-btn': () => console.count('Console Count Demo'),
+        'warn-btn': () => console.warn('Console Warn Demo'),
+        'assert-btn': () => console.assert(false, 'Console Assert Demo'),
+        'clear-btn': () => console.clear(),
+        'dir-btn': () => console.dir(document.body),
+        'dirxml-btn': () => console.dirxml(document),
+        'group-start-btn': () => {
+          console.group('Console Group Demo');
+          console.log('Inside group');
+        },
+        'group-end-btn': () => console.groupEnd(),
+        'table-btn': () => console.table([{ name: 'John', age: 30 }, { name: 'Jane', age: 25 }]),
+        'start-timer-btn': () => console.time('Timer'),
+        'end-timer-btn': () => console.timeEnd('Timer'),
+        'trace-btn': () => console.trace('Console Trace Demo'),
+        'global-error-btn': () => {
+          try {
+            // Simulate a global error by trying to call a non-existent function
+            nonExistentFunction();
+          } catch (error) {
+            console.error('Caught an error:', error);
+            TrackJS.track('Testing TrackJS!');
+          }
+        }
+      };
+
+      // Adding event listeners to buttons
+      errorBtns.forEach(button => {
+        const action = consoleActions[button.id];
+        if (action) {
+          button.addEventListener('click', action);
+        }
+      });
     });
-
-    let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
-
-    // Start your code here
-    // You may move this JS to another file if you wish
   </script>
 </body>
 
